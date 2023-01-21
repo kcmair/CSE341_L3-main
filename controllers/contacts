@@ -1,14 +1,14 @@
 const mongodb = require("../db/connect");
 const ObjectId = require("mongodb").ObjectId;
 
-const returnAllContacts = async (req, res, next) => {
+const returnAllContacts = async (req, res) => {
   try {
-    const result = await mongodb
+    const response = await mongodb
       .getDb()
       .db("CSE341DB1")
       .collection("Contacts")
       .find();
-    result.toArray().then((lists) => {
+    response.toArray().then((lists) => {
       res.setHeader("Content-Type", "application/json");
       res.status(200).json(lists);
     });
@@ -17,19 +17,19 @@ const returnAllContacts = async (req, res, next) => {
   }
 };
 
-const findContactById = async (req, res, next) => {
+const findContactById = async (req, res) => {
   const userId = new ObjectId(req.params.id);
   if (!userId) {
-    res.status(400).send("Please specify a contact id.");
+    res.status(400);
     return;
   }
   try {
-    const result = await mongodb
+    const response = await mongodb
       .getDb()
       .db("CSE341DB1")
       .collection("Contacts")
       .find({ _id: userId });
-    result.toArray().then((lists) => {
+    response.toArray().then((lists) => {
       res.setHeader("Content-Type", "application/json");
       res.status(200).json(lists[0]);
     });
@@ -38,31 +38,56 @@ const findContactById = async (req, res, next) => {
   }
 };
 
-const createContact = async (req, res, next) => {
-  // const body = req.body;
-  // console.log(Object.values(body).length)
-  if(Object.values(req.body).length < 5) {
-    res.status(400).send('Pleas ensure all fields are submitted.');
-    return;
-  }
+const createContact = async (req, res) => {
   try {
-    const result = await mongodb
+    const response = await mongodb
       .getDb()
       .db("CSE341DB1")
       .collection("Contacts")
       .insertOne(req.body);
-    res.status(200).send(`Contact information for ${body.firstName} was successfully saved!`);
+    res.status(201).json(response);
   } catch (e) {
-    res.status(500).send('error');
+    res.status(500).send(e);
   }
 };
 
-const updateContact = async (req, res, next) => {
-  res.status(200).send('Under construction')
-}
+const updateContact = async (req, res) => {
+  const userId = new ObjectId(req.params.id);
+  const contact = {
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+    email: req.body.email,
+    favColor: req.body.favColor,
+    birthday: req.body.birthday
+  };
+  try{
+    const response = await mongodb
+      .getDb()
+      .db("CSE341DB1")
+      .collection("Contacts")
+      .replaceOne({ _id: userId }, contact);
+    res.status(204).send(response);
+  } catch (e) {
+    res.status(500).send(e);
+  }
+};
 
-const deleteContact = async (req, res, next) => {
-  res.send('Under construction')
-}
+const deleteContact = async (req, res) => {
+  const userId = new ObjectId(req.params.id);
+  if (!userId) {
+    res.status(400);
+    return;
+  }
+  try{
+    const response = await mongodb
+      .getDb()
+      .db("CSE341DB1")
+      .collection("Contacts")
+      .remove({ _id: userId }, true);
+    res.status(200).json(response);
+  } catch (e) {
+    res.status(500).send(e)
+  }
+};
 
   module.exports = { returnAllContacts, findContactById, createContact, updateContact, deleteContact };
